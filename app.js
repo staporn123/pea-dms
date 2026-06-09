@@ -12,12 +12,21 @@ function apiCall(action, data = {}) {
     const callbackName =
       "jsonp_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
 
-    window[callbackName] = function(response) {
-      delete window[callbackName];
-      script.remove();
+    let finished = false;
 
-      if (!response.success) {
-        reject(new Error(response.message || "API Error"));
+    window[callbackName] = function(response) {
+      finished = true;
+
+      try {
+        delete window[callbackName];
+      } catch (e) {}
+
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      if (!response || !response.success) {
+        reject(new Error(response?.message || "API Error"));
         return;
       }
 
@@ -32,17 +41,31 @@ function apiCall(action, data = {}) {
       params.set("data", JSON.stringify(data));
     }
 
+    params.set("_", Date.now());
+
     const script = document.createElement("script");
-  script.src = CONFIG.API_URL + "?" + params.toString() + "&_=" + Date.now();
-script.referrerPolicy = "no-referrer";
-    
+    script.src = CONFIG.API_URL + "?" + params.toString();
+    script.referrerPolicy = "no-referrer";
+
     script.onerror = function() {
-  delete window[callbackName];
-  script.remove();
-  reject(new Error("เชื่อมต่อ API ไม่สำเร็จ: " + script.src));
-};
+      console.warn("JSONP redirect detected:", script.src);
+    };
 
     document.body.appendChild(script);
+
+    setTimeout(() => {
+      if (!finished) {
+        try {
+          delete window[callbackName];
+        } catch (e) {}
+
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+
+        reject(new Error("API ไม่ตอบกลับภายใน 20 วินาที"));
+      }
+    }, 20000);
   });
 }
 
