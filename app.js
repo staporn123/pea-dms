@@ -33,8 +33,9 @@ function apiCall(action, data = {}) {
     }
 
     const script = document.createElement("script");
-    script.src = CONFIG.API_URL + "?" + params.toString();
-
+  script.src = CONFIG.API_URL + "?" + params.toString() + "&_=" + Date.now();
+script.referrerPolicy = "no-referrer";
+    
     script.onerror = function() {
   delete window[callbackName];
   script.remove();
