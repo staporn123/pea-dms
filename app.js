@@ -36,10 +36,10 @@ function apiCall(action, data = {}) {
     script.src = CONFIG.API_URL + "?" + params.toString();
 
     script.onerror = function() {
-      delete window[callbackName];
-      script.remove();
-      reject(new Error("เชื่อมต่อ API ไม่สำเร็จ"));
-    };
+  delete window[callbackName];
+  script.remove();
+  reject(new Error("เชื่อมต่อ API ไม่สำเร็จ: " + script.src));
+};
 
     document.body.appendChild(script);
   });
