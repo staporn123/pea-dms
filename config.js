@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbzD-8Y0RkLGy4zYM7xe8P5g7gWyDh_UPD9BWnZh4WQz4LU_4VNXCtLKqiAdEbxK2VOH/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbzmm-S811B0yb1aR_aCqCWJKlKAx9QP6sE38aMgrh9S3nHKIDq12ILkRAnOVhHa1z9A/exec",
   DOC_PREFIX: "ฉ.1 กฟส.ออ.(ปร)-",
-  VERSION: "4.0.5"
+  VERSION: "4.0.6"
 };
