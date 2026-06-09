@@ -2,7 +2,7 @@ let state = {
   documents: [],
   dashboard: {},
   user: {},
-  prefix: CONFIG.DOC_PREFIX,
+  prefix: CONFIG.DOC_PREFIX || "ฉ.1 กฟส.ออ.(ปร)-",
   editMode: false,
   monthlyChart: null
 };
@@ -13,6 +13,7 @@ function apiCall(action, data = {}) {
       "jsonp_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
 
     let finished = false;
+    let script;
 
     window[callbackName] = function(response) {
       finished = true;
@@ -43,7 +44,7 @@ function apiCall(action, data = {}) {
 
     params.set("_", Date.now());
 
-    const script = document.createElement("script");
+    script = document.createElement("script");
     script.src = CONFIG.API_URL + "?" + params.toString();
     script.referrerPolicy = "no-referrer";
 
@@ -93,9 +94,9 @@ async function loadApp() {
     state.documents = res.documents || [];
     state.dashboard = res.dashboard || {};
     state.user = res.user || {};
-    state.prefix = res.app?.prefix || CONFIG.DOC_PREFIX;
+    state.prefix = res.app?.prefix || CONFIG.DOC_PREFIX || "ฉ.1 กฟส.ออ.(ปร)-";
 
-    document.getElementById("userName").innerText = state.user.name || "-";
+    document.getElementById("userName").innerText = state.user.name || state.user.email || "-";
     document.getElementById("userRole").innerText = state.user.role || "-";
 
     resetForm();
@@ -184,7 +185,7 @@ async function saveDocument() {
       state.documents = res.documents || [];
       state.dashboard = res.dashboard || {};
 
-      showToast(res.message);
+      showToast(res.message || "บันทึกข้อมูลเรียบร้อยแล้ว");
       resetForm();
       renderDashboard();
       renderMonthlyChart();
@@ -192,7 +193,7 @@ async function saveDocument() {
       renderDocuments();
       showView("documents");
     } else {
-      showToast(res.message, true);
+      showToast(res.message || "บันทึกไม่สำเร็จ", true);
     }
 
   } catch (err) {
@@ -367,13 +368,13 @@ async function cancelDoc(id) {
     if (res.status === "success") {
       state.documents = res.documents || [];
       state.dashboard = res.dashboard || {};
-      showToast(res.message);
+      showToast(res.message || "ยกเลิกเอกสารเรียบร้อยแล้ว");
       renderDashboard();
       renderMonthlyChart();
       renderRecent();
       renderDocuments();
     } else {
-      showToast(res.message, true);
+      showToast(res.message || "ยกเลิกไม่สำเร็จ", true);
     }
   } catch (err) {
     showToast(err.message, true);
