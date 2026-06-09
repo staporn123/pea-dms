@@ -1,38 +1,151 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<title>PEA DMS V4</title>
-<style>
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f6fb;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
+  <meta charset="UTF-8">
+  <title>PEA DMS V4</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-.card{
-    background:white;
-    padding:40px;
-    border-radius:20px;
-    box-shadow:0 10px 30px rgba(0,0,0,.1);
-    text-align:center;
-}
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-h1{
-    color:#6d28d9;
-}
-</style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="config.js"></script>
 </head>
+
 <body>
+  <div id="toast"></div>
+  <div id="loadingOverlay" class="hidden">กำลังโหลดข้อมูล...</div>
 
-<div class="card">
-    <h1>PEA DMS V4</h1>
-    <p>Frontend Hosted on GitHub Pages</p>
-    <p>เชื่อมต่อ Apps Script API สำเร็จแล้ว</p>
-</div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">PEA</div>
+        <div>
+          <h1>PEA DMS</h1>
+          <p>Enterprise V4.0</p>
+        </div>
+      </div>
 
+      <nav>
+        <button class="nav-item active" onclick="showView('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
+        <button class="nav-item" onclick="showView('create')"><i class="fa-solid fa-file-circle-plus"></i> ออกเลขใหม่</button>
+        <button class="nav-item" onclick="showView('documents')"><i class="fa-solid fa-table-list"></i> รายการเอกสาร</button>
+      </nav>
+
+      <div class="user-box">
+        <p id="userName">Loading...</p>
+        <span id="userRole">-</span>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">PEA Document Management System</div>
+          <h2>ระบบบริหารเลขหนังสืออนุมัติ</h2>
+          <p>GitHub Pages + Apps Script API + Google Sheet</p>
+        </div>
+
+        <button class="primary-btn" onclick="openCreateForm()">
+          <i class="fa-solid fa-plus"></i> ออกเลขใหม่
+        </button>
+      </header>
+
+      <section id="dashboardView" class="view">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-icon"><i class="fa-solid fa-file-lines"></i></div><div><p>เอกสารทั้งหมด</p><h3 id="kpiTotal">0</h3><span>รายการทั้งหมด</span></div></div>
+          <div class="kpi-card kpi-blue"><div class="kpi-icon"><i class="fa-solid fa-calendar-days"></i></div><div><p>เดือนนี้</p><h3 id="kpiMonth">0</h3><span>รายการเดือนนี้</span></div></div>
+          <div class="kpi-card kpi-orange"><div class="kpi-icon"><i class="fa-solid fa-bolt"></i></div><div><p>วันนี้</p><h3 id="kpiToday">0</h3><span>ออกเลขวันนี้</span></div></div>
+          <div class="kpi-card kpi-green"><div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div><div><p>ใช้งานอยู่</p><h3 id="kpiActive">0</h3><span>ACTIVE</span></div></div>
+        </div>
+
+        <div class="quick-grid">
+          <button class="quick-card" onclick="openCreateForm()"><i class="fa-solid fa-plus"></i><strong>ออกเลขใหม่</strong><span>เพิ่มเอกสาร</span></button>
+          <button class="quick-card" onclick="showView('documents')"><i class="fa-solid fa-search"></i><strong>ค้นหารายการ</strong><span>ดูข้อมูลทั้งหมด</span></button>
+          <button class="quick-card" onclick="exportCSV()"><i class="fa-solid fa-file-export"></i><strong>Export CSV</strong><span>ส่งออกข้อมูล</span></button>
+          <button class="quick-card" onclick="showToast('PDF จะพัฒนาใน V4.1')"><i class="fa-solid fa-file-pdf"></i><strong>รายงาน PDF</strong><span>เร็ว ๆ นี้</span></button>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="panel">
+            <div class="panel-header"><div><h3>สถิติย้อนหลัง 12 เดือน</h3><p>จำนวนเอกสารแยกตามเดือน</p></div></div>
+            <canvas id="monthlyChart" height="120"></canvas>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><div><h3>สถานะเอกสาร</h3><p>ภาพรวมตามสถานะ</p></div></div>
+            <div class="status-summary">
+              <div><span class="dot active"></span><p>ACTIVE</p><strong id="statusActive">0</strong></div>
+              <div><span class="dot pending"></span><p>PENDING</p><strong id="statusPending">0</strong></div>
+              <div><span class="dot cancel"></span><p>CANCEL</p><strong id="statusCancel">0</strong></div>
+            </div>
+            <div class="latest-box"><small>เลขล่าสุด</small><strong id="latestDocNo">-</strong></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><div><h3>รายการล่าสุด</h3><p>ข้อมูลล่าสุดจาก Google Sheet</p></div></div>
+          <div id="recentList"></div>
+        </div>
+      </section>
+
+      <section id="createView" class="view hidden">
+        <div class="panel">
+          <div class="panel-header"><div><h3 id="formTitle">ออกเลขหนังสือใหม่</h3><p>บันทึกข้อมูลลง Google Sheet</p></div></div>
+
+          <form id="docForm" class="form-grid">
+            <input type="hidden" id="docId">
+            <div class="field"><label>เลขหนังสือ / เลขบันทึก</label><input id="docNo" required><small>ระบบตั้งต้นให้ คุณกรอกเลขและปีต่อเอง</small></div>
+            <div class="field"><label>วันที่</label><input id="docDate" type="date" required></div>
+            <div class="field full"><label>เรื่อง</label><textarea id="subject" rows="3" required></textarea></div>
+            <div class="field"><label>ผู้ขอ</label><input id="requester" required></div>
+            <div class="field"><label>ส่งถึง</label><input id="recipient" required></div>
+            <div class="field"><label>สถานะ</label><select id="status"><option value="ACTIVE">ACTIVE</option><option value="PENDING">PENDING</option><option value="CANCEL">CANCEL</option></select></div>
+            <div class="field"><label>ลิงก์ไฟล์แนบ</label><input id="fileLink" placeholder="https://drive.google.com/..."></div>
+            <div class="form-actions full">
+              <button type="button" class="secondary-btn" onclick="resetForm()">ล้างฟอร์ม</button>
+              <button type="submit" id="saveBtn" class="primary-btn"><i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="documentsView" class="view hidden">
+        <div class="panel">
+          <div class="panel-header">
+            <div><h3>รายการเอกสารทั้งหมด</h3><p>ค้นหา กรอง และจัดการข้อมูล</p></div>
+            <button class="secondary-btn" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+          </div>
+
+          <div class="toolbar">
+            <input id="searchInput" placeholder="ค้นหาเลขที่ / เรื่อง / ผู้ขอ / ส่งถึง..." oninput="renderDocuments()">
+            <select id="statusFilter" onchange="renderDocuments()">
+              <option value="">ทุกสถานะ</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="PENDING">PENDING</option>
+              <option value="CANCEL">CANCEL</option>
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>เลขที่</th><th>วันที่</th><th>เรื่อง</th><th>ผู้ขอ</th><th>ส่งถึง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+              <tbody id="documentTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="detailModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header"><h3>รายละเอียดเอกสาร</h3><button onclick="closeModal()">×</button></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
