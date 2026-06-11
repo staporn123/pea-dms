@@ -356,10 +356,20 @@ function renderDocuments() {
   let docs = [...state.documents];
 
   if (keyword) {
-    docs = docs.filter(d =>
-      Object.values(d).join(" ").toLowerCase().includes(keyword)
-    );
-  }
+  docs = docs.filter(d => {
+    const thaiDate = formatThaiDate(d.docDate);
+    const isoDate = d.docDate || "";
+    const dateNoSlash = thaiDate.replaceAll("/", "");
+    const searchText = [
+      ...Object.values(d),
+      thaiDate,
+      isoDate,
+      dateNoSlash
+    ].join(" ").toLowerCase();
+
+    return searchText.includes(keyword.replaceAll("/", ""));
+  });
+}
 
   if (status) {
     docs = docs.filter(d => d.status === status);
