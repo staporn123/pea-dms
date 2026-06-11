@@ -350,26 +350,55 @@ function renderRecent() {
 
 function renderDocuments() {
   const tbody = document.getElementById("documentTable");
-  const keyword = document.getElementById("searchInput")?.value.toLowerCase().trim() || "";
+  const keywordRaw = document.getElementById("searchInput")?.value.toLowerCase().trim() || "";
+  const keywordNoSymbol = keywordRaw.replaceAll("/", "").replaceAll("-", "").replaceAll(" ", "");
   const status = document.getElementById("statusFilter")?.value || "";
 
   let docs = [...state.documents];
 
-  if (keyword) {
-  docs = docs.filter(d => {
-    const thaiDate = formatThaiDate(d.docDate);
-    const isoDate = d.docDate || "";
-    const dateNoSlash = thaiDate.replaceAll("/", "");
-    const searchText = [
-      ...Object.values(d),
-      thaiDate,
-      isoDate,
-      dateNoSlash
-    ].join(" ").toLowerCase();
+  if (keywordRaw) {
+    docs = docs.filter(d => {
+      const thaiDate = formatThaiDate(d.docDate);
+      const isoDate = d.docDate || "";
 
-    return searchText.includes(keyword.replaceAll("/", ""));
-  });
-}
+      const thaiDateNoSlash = thaiDate.replaceAll("/", "");
+      const isoDateNoDash = isoDate.replaceAll("-", "");
+
+      const shortThaiDate = thaiDate.split("/").slice(0, 2).join("/");
+      const shortThaiDateNoSlash = shortThaiDate.replaceAll("/", "");
+
+      const searchText = [
+        d.docNo,
+        d.docDate,
+        thaiDate,
+        thaiDateNoSlash,
+        isoDate,
+        isoDateNoDash,
+        shortThaiDate,
+        shortThaiDateNoSlash,
+        d.subject,
+        d.requester,
+        d.recipient,
+        d.status,
+        d.createdBy,
+        d.createdAt,
+        d.reservedBy,
+        d.reservedAt,
+        d.reservedNote,
+        d.note
+      ].join(" ").toLowerCase();
+
+      const searchTextNoSymbol = searchText
+        .replaceAll("/", "")
+        .replaceAll("-", "")
+        .replaceAll(" ", "");
+
+      return (
+        searchText.includes(keywordRaw) ||
+        searchTextNoSymbol.includes(keywordNoSymbol)
+      );
+    });
+  }
 
   if (status) {
     docs = docs.filter(d => d.status === status);
