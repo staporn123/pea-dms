@@ -2,15 +2,15 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>PEA DMS V4</title>
+  <title>PEA DMS V4.1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link rel="stylesheet" href="style.css?v=4.0.7">
+  <link rel="stylesheet" href="style.css?v=4.1.0">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="config.js?v=4.0.7"></script>
+  <script src="config.js?v=4.1.0"></script>
 </head>
 
 <body>
@@ -23,7 +23,7 @@
         <div class="brand-icon">PEA</div>
         <div>
           <h1>PEA DMS</h1>
-          <p>Enterprise V4.0</p>
+          <p>Enterprise V4.1</p>
         </div>
       </div>
 
@@ -31,9 +31,15 @@
         <button class="nav-item active" onclick="showView('dashboard')">
           <i class="fa-solid fa-chart-line"></i> Dashboard
         </button>
+
         <button class="nav-item" onclick="showView('create')">
           <i class="fa-solid fa-file-circle-plus"></i> ออกเลขใหม่
         </button>
+
+        <button class="nav-item" onclick="showView('reserve')">
+          <i class="fa-solid fa-bookmark"></i> จองเลข
+        </button>
+
         <button class="nav-item" onclick="showView('documents')">
           <i class="fa-solid fa-table-list"></i> รายการเอกสาร
         </button>
@@ -104,6 +110,12 @@
             <span>เพิ่มเอกสาร</span>
           </button>
 
+          <button class="quick-card" onclick="showView('reserve')">
+            <i class="fa-solid fa-bookmark"></i>
+            <strong>จองเลข</strong>
+            <span>จองเลขไว้ก่อน</span>
+          </button>
+
           <button class="quick-card" onclick="showView('documents')">
             <i class="fa-solid fa-search"></i>
             <strong>ค้นหารายการ</strong>
@@ -114,12 +126,6 @@
             <i class="fa-solid fa-file-export"></i>
             <strong>Export CSV</strong>
             <span>ส่งออกข้อมูล</span>
-          </button>
-
-          <button class="quick-card" onclick="showToast('PDF จะพัฒนาใน V4.1')">
-            <i class="fa-solid fa-file-pdf"></i>
-            <strong>รายงาน PDF</strong>
-            <span>เร็ว ๆ นี้</span>
           </button>
         </div>
 
@@ -145,6 +151,7 @@
             <div class="status-summary">
               <div><span class="dot active"></span><p>ACTIVE</p><strong id="statusActive">0</strong></div>
               <div><span class="dot pending"></span><p>PENDING</p><strong id="statusPending">0</strong></div>
+              <div><span class="dot reserved"></span><p>RESERVED</p><strong id="statusReserved">0</strong></div>
               <div><span class="dot cancel"></span><p>CANCEL</p><strong id="statusCancel">0</strong></div>
             </div>
 
@@ -209,6 +216,7 @@
               <select id="status">
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="PENDING">PENDING</option>
+                <option value="RESERVED">RESERVED</option>
                 <option value="CANCEL">CANCEL</option>
               </select>
             </div>
@@ -222,6 +230,57 @@
               <button type="button" class="secondary-btn" onclick="resetForm()">ล้างฟอร์ม</button>
               <button type="submit" id="saveBtn" class="primary-btn">
                 <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="reserveView" class="view hidden">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>จองเลขหนังสือ</h3>
+              <p>ใช้สำหรับจองเลขล่วงหน้า โดยเลขที่จองแล้วจะไม่สามารถนำไปออกซ้ำได้</p>
+            </div>
+          </div>
+
+          <form id="reserveForm" class="form-grid">
+            <div class="field">
+              <label>เลขเริ่มต้นที่ต้องการจอง</label>
+              <input id="reserveStartDocNo" placeholder="ฉ.1 กฟส.ออ.(ปร)-629/2569" required>
+              <small>ระบบจะจองเลขต่อเนื่องจากเลขนี้</small>
+            </div>
+
+            <div class="field">
+              <label>วันที่ลงหนังสือ</label>
+              <input id="reserveDocDate" type="date" required>
+            </div>
+
+            <div class="field">
+              <label>จำนวนเลขที่ต้องการจอง</label>
+              <input id="reserveAmount" type="number" min="1" max="100" value="1" required>
+            </div>
+
+            <div class="field">
+              <label>ผู้จอง</label>
+              <input id="reserveRequester" required>
+            </div>
+
+            <div class="field">
+              <label>ส่งถึง</label>
+              <input id="reserveRecipient" value="-" required>
+            </div>
+
+            <div class="field full">
+              <label>หมายเหตุการจอง</label>
+              <textarea id="reserveNote" rows="3" placeholder="เช่น จองไว้สำหรับงานก่อสร้างหลายรายการ"></textarea>
+            </div>
+
+            <div class="form-actions full">
+              <button type="button" class="secondary-btn" onclick="resetReserveForm()">ล้างฟอร์ม</button>
+              <button type="submit" id="reserveBtn" class="primary-btn">
+                <i class="fa-solid fa-bookmark"></i> จองเลข
               </button>
             </div>
           </form>
@@ -246,6 +305,7 @@
               <option value="">ทุกสถานะ</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="PENDING">PENDING</option>
+              <option value="RESERVED">RESERVED</option>
               <option value="CANCEL">CANCEL</option>
             </select>
           </div>
@@ -281,6 +341,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.0.7"></script>
+  <script src="app.js?v=4.1.0"></script>
 </body>
 </html>
