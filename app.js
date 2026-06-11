@@ -83,6 +83,14 @@ function bindEvents() {
       saveDocument();
     });
   }
+
+  const reserveForm = document.getElementById("reserveForm");
+  if (reserveForm) {
+    reserveForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      reserveNumbers();
+    });
+  }
 }
 
 async function loadApp() {
@@ -100,6 +108,7 @@ async function loadApp() {
     document.getElementById("userRole").innerText = state.user.role || "-";
 
     resetForm();
+    resetReserveForm();
     renderDashboard();
     renderMonthlyChart();
     renderRecent();
@@ -133,9 +142,15 @@ function showView(view) {
     document.querySelectorAll(".nav-item")[1].classList.add("active");
   }
 
+  if (view === "reserve") {
+    document.getElementById("reserveView").classList.remove("hidden");
+    document.querySelectorAll(".nav-item")[2].classList.add("active");
+    resetReserveForm();
+  }
+
   if (view === "documents") {
     document.getElementById("documentsView").classList.remove("hidden");
-    document.querySelectorAll(".nav-item")[2].classList.add("active");
+    document.querySelectorAll(".nav-item")[3].classList.add("active");
   }
 }
 
@@ -156,6 +171,17 @@ function resetForm() {
   document.getElementById("recipient").value = "";
   document.getElementById("status").value = "ACTIVE";
   document.getElementById("fileLink").value = "";
+}
+
+function resetReserveForm() {
+  if (!document.getElementById("reserveStartDocNo")) return;
+
+  document.getElementById("reserveStartDocNo").value = state.prefix;
+  document.getElementById("reserveDocDate").valueAsDate = new Date();
+  document.getElementById("reserveAmount").value = 1;
+  document.getElementById("reserveRequester").value = "";
+  document.getElementById("reserveRecipient").value = "-";
+  document.getElementById("reserveNote").value = "";
 }
 
 async function saveDocument() {
@@ -203,6 +229,50 @@ async function saveDocument() {
   }
 }
 
+async function reserveNumbers() {
+  const payload = {
+    startDocNo: document.getElementById("reserveStartDocNo").value.trim(),
+    docDate: document.getElementById("reserveDocDate").value,
+    amount: Number(document.getElementById("reserveAmount").value),
+    requester: document.getElementById("reserveRequester").value.trim(),
+    recipient: document.getElementById("reserveRecipient").value.trim(),
+    reservedNote: document.getElementById("reserveNote").value.trim(),
+    note: document.getElementById("reserveNote").value.trim(),
+    subject: "จองเลขไว้ก่อน"
+  };
+
+  const btn = document.getElementById("reserveBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังจองเลข...`;
+
+  try {
+    const res = await apiCall("reserveDocuments", payload);
+
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-bookmark"></i> จองเลข`;
+
+    if (res.status === "success") {
+      state.documents = res.documents || [];
+      state.dashboard = res.dashboard || {};
+
+      showToast(res.message || "จองเลขเรียบร้อยแล้ว");
+      resetReserveForm();
+      renderDashboard();
+      renderMonthlyChart();
+      renderRecent();
+      renderDocuments();
+      showView("documents");
+    } else {
+      showToast(res.message || "จองเลขไม่สำเร็จ", true);
+    }
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-bookmark"></i> จองเลข`;
+    showToast(err.message, true);
+  }
+}
+
 function renderDashboard() {
   document.getElementById("kpiTotal").innerText = state.dashboard.total || 0;
   document.getElementById("kpiMonth").innerText = state.dashboard.monthCount || 0;
@@ -211,6 +281,12 @@ function renderDashboard() {
 
   document.getElementById("statusActive").innerText = state.dashboard.activeCount || 0;
   document.getElementById("statusPending").innerText = state.dashboard.pendingCount || 0;
+
+  const reservedEl = document.getElementById("statusReserved");
+  if (reservedEl) {
+    reservedEl.innerText = state.dashboard.reservedCount || 0;
+  }
+
   document.getElementById("statusCancel").innerText = state.dashboard.cancelCount || 0;
   document.getElementById("latestDocNo").innerText = state.dashboard.latestDocNo || "-";
 }
@@ -330,6 +406,12 @@ function openDetail(id) {
     <p><strong>สถานะ:</strong> <span class="badge ${d.status}">${d.status}</span></p>
     <p><strong>ผู้สร้าง:</strong> ${escapeHtml(d.createdBy)}</p>
     <p><strong>วันที่บันทึก:</strong> ${escapeHtml(d.createdAt)}</p>
+    ${d.status === "RESERVED" ? `
+      <hr>
+      <p><strong>ผู้จอง:</strong> ${escapeHtml(d.reservedBy || d.requester)}</p>
+      <p><strong>วันที่จอง:</strong> ${escapeHtml(d.reservedAt || "-")}</p>
+      <p><strong>หมายเหตุจอง:</strong> ${escapeHtml(d.reservedNote || d.note || "-")}</p>
+    ` : ""}
     ${d.fileLink ? `<p><strong>ไฟล์แนบ:</strong> <a href="${escapeHtml(d.fileLink)}" target="_blank">เปิดไฟล์</a></p>` : ""}
   `;
 
@@ -387,7 +469,19 @@ function exportCSV() {
     return;
   }
 
-  const headers = ["เลขที่", "วันที่", "เรื่อง", "ผู้ขอ", "ส่งถึง", "สถานะ", "ผู้สร้าง", "วันที่บันทึก"];
+  const headers = [
+    "เลขที่",
+    "วันที่",
+    "เรื่อง",
+    "ผู้ขอ",
+    "ส่งถึง",
+    "สถานะ",
+    "ผู้สร้าง",
+    "วันที่บันทึก",
+    "ผู้จอง",
+    "วันที่จอง",
+    "หมายเหตุจอง"
+  ];
 
   const rows = state.documents.map(d => [
     d.docNo,
@@ -397,7 +491,10 @@ function exportCSV() {
     d.recipient,
     d.status,
     d.createdBy,
-    d.createdAt
+    d.createdAt,
+    d.reservedBy || "",
+    d.reservedAt || "",
+    d.reservedNote || ""
   ]);
 
   const csv = [headers, ...rows]
