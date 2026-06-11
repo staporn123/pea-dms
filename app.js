@@ -351,7 +351,7 @@ function renderRecent() {
 function renderDocuments() {
   const tbody = document.getElementById("documentTable");
   const keywordRaw = document.getElementById("searchInput")?.value.toLowerCase().trim() || "";
-  const keywordNoSymbol = keywordRaw.replaceAll("/", "").replaceAll("-", "").replaceAll(" ", "");
+  const keywordNoSymbol = keywordRaw.replace(/[\/\-\s]/g, "");
   const status = document.getElementById("statusFilter")?.value || "";
 
   let docs = [...state.documents];
@@ -361,21 +361,13 @@ function renderDocuments() {
       const thaiDate = formatThaiDate(d.docDate);
       const isoDate = d.docDate || "";
 
-      const thaiDateNoSlash = thaiDate.replaceAll("/", "");
-      const isoDateNoDash = isoDate.replaceAll("-", "");
-
-      const shortThaiDate = thaiDate.split("/").slice(0, 2).join("/");
-      const shortThaiDateNoSlash = shortThaiDate.replaceAll("/", "");
-
       const searchText = [
         d.docNo,
         d.docDate,
         thaiDate,
-        thaiDateNoSlash,
+        thaiDate.replace(/[\/\-\s]/g, ""),
         isoDate,
-        isoDateNoDash,
-        shortThaiDate,
-        shortThaiDateNoSlash,
+        isoDate.replace(/[\/\-\s]/g, ""),
         d.subject,
         d.requester,
         d.recipient,
@@ -388,15 +380,9 @@ function renderDocuments() {
         d.note
       ].join(" ").toLowerCase();
 
-      const searchTextNoSymbol = searchText
-        .replaceAll("/", "")
-        .replaceAll("-", "")
-        .replaceAll(" ", "");
+      const searchTextNoSymbol = searchText.replace(/[\/\-\s]/g, "");
 
-      return (
-        searchText.includes(keywordRaw) ||
-        searchTextNoSymbol.includes(keywordNoSymbol)
-      );
+      return searchText.includes(keywordRaw) || searchTextNoSymbol.includes(keywordNoSymbol);
     });
   }
 
